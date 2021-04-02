@@ -1,0 +1,13 @@
+/build
+__pycache__
+
+*.onnx
+
+**/.vscode/*
+**/*.dat
+**/log
+src/Transpose/kernel.py
+
+# Vim
+*.swp
+.ycm_extra_conf.py
