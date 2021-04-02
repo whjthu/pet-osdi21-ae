@@ -1,13 +1,7 @@
-# ml-opt
+# PET
 
-Optimizing machine learning framework
+PET: Optimizing Tensor Programs with Partially Equivalent Transformations and Automated Corrections
 
-## compiling instructions
+ODSI' 21 AE
 
-```sh
-mkdir build
-cd build
-cmake .. # Or cmake -DCMAKE_BUILD_TYPE=Debug ..
-make
-```
-
+See README.pdf for detail.
