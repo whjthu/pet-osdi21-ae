@@ -476,7 +476,8 @@ int main(int argc, const char *argv[]) {
                         ch::duration_cast<ch::duration<double>>(end - beg).count() *
                         1000;
             }
-            std::cout << algo_name[algoid] << ": " << time_conv / expr << std::endl;
+	    time_conv /= expr;
+            std::cout << algo_name[algoid] << ": " << time_conv  << std::endl;
             if (time_conv < best_time)
                 best_time = time_conv;
             cudaFree(d_workspace);

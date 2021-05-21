@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [ ! -n "$PET_HOME" ]; then  
   echo "PET_HOME is not set"  
   exit

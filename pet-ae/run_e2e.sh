@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [ ! -n "$PET_HOME" ]; then  
     echo "PET_HOME is not set"  
     exit
@@ -17,11 +19,11 @@ time ${PET_BUILD}/dilation 1 1  | grep -i "best perf"
 time ${PET_BUILD}/dilation 1 16 | grep -i "best perf"
 
 echo Bert
-time ${PET_BUILD}/onnx ${PET_MODEL}/mybert-new.1.onnx | grep -i "best perf"
+time ${PET_BUILD}/onnx ${PET_MODEL}/csrnet_bs1.onnx | grep -i "best perf"
 
-time ${PET_BUILD}/onnx ${PET_MODEL}/mybert-new.16.onnx | grep -i "best perf"
+time ${PET_BUILD}/onnx ${PET_MODEL}/csrnet_bs16.onnx | grep -i "best perf"
 
 echo Inception
-time ${PET_BUILD}/onnx ${PET_MODEL}/inception_origin.infered.onnx | grep -i "best perf"
+time ${PET_BUILD}/onnx ${PET_MODEL}/inception_bs1.onnx | grep -i "best perf"
 
-time ${PET_BUILD}/onnx ${PET_MODEL}/inception_origin.16.inferred.onnx | grep -i "best perf"
+time ${PET_BUILD}/onnx ${PET_MODEL}/inception_bs16.onnx | grep -i "best perf"

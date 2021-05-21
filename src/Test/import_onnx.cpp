@@ -17,14 +17,14 @@ int main(int argc, char **argv) {
     graph = std::make_shared<tpm::SubGraph>(g->getOperators());
     tpm::SearchEngine searchEngine;
     searchEngine.run(graph, bestGraph);
-    tpm::CodeEngine codeEngine;
-    auto perfEngine = searchEngine.exportPerfEngine();
-    codeEngine.importPerfEngine(perfEngine);
-    codeEngine.genCode(bestGraph, "res.cu");
+    // tpm::CodeEngine codeEngine;
+    // auto perfEngine = searchEngine.exportPerfEngine();
+    // codeEngine.importPerfEngine(perfEngine);
+    // codeEngine.genCode(bestGraph, "res.cu");
 
-    perfEngine->setPenalty(0);
-    codeEngine.importPerfEngine(perfEngine);
-    codeEngine.genCode(graph, "origin.cu");
+    // perfEngine->setPenalty(0);
+    // codeEngine.importPerfEngine(perfEngine);
+    // codeEngine.genCode(graph, "origin.cu");
 
     return 0;
 }

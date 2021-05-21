@@ -12,6 +12,7 @@ class SearchEngine {
   private:
     int MUTATION_DEPTH = 4;
     int MUTATION_SIZE = 3;
+    int MUTATION_MDEPTH = 1;
     int partitionThreshold =
         3; // cut nodes whose #in + #out >= partitionThreshold
     int GRAPH_SIZE = 5;

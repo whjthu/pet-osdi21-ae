@@ -44,6 +44,8 @@ void Generator::run(SubGraph *in_graph, std::vector<SubGraph *> &out_graphs,
                     int mdepth,
                     std::vector<std::shared_ptr<Operator>> candidate_ops,
                     float threshold) {
+    if (!enable_non_eq_opt && !enable_eq_opt)
+	return;
     // TODO: remove and make sure all the ops in the input graph are in the
     // searching list
     // out_graphs.emplace_back(new SubGraph(in_graph->getOperators()));
@@ -52,6 +54,7 @@ void Generator::run(SubGraph *in_graph, std::vector<SubGraph *> &out_graphs,
     // candidates_ops list will note be modified when generator is in finding
     // reciprocity mode
     group_size = 0;
+    auto mdenv = getenv("PET_MUTATION_DEPTH");
     auto graph_type = statGraph(in_graph);
     if (prune_reciprocity && candidate_ops.empty()) {
         switch (graph_type) {
@@ -92,6 +95,7 @@ void Generator::run(SubGraph *in_graph, std::vector<SubGraph *> &out_graphs,
             addCandidateOpsForTransposeGroupConv(candidate_ops, in_graph);
             break;
         case NormalMatmul:
+	    EQOPT;
             addCandidateOpsForNormalMatmul(candidate_ops, in_graph);
             break;
         case BatchMatmul:
@@ -100,9 +104,14 @@ void Generator::run(SubGraph *in_graph, std::vector<SubGraph *> &out_graphs,
         default:
             return;
         }
+        if (mdenv != nullptr)
+            max_depth = mdepth > 0 ? mdepth : 3;
     } else
         max_depth = mdepth > 0 ? mdepth : 3;
     equal_threshold = threshold;
+    //if ((!enable_non_eq_opt || !enable_eq_opt) && graph_type != DilatedConv)
+//     if (!enable_eq_opt && graph_type != DilatedConv)
+// 	max_depth = 3;
 
     // Refresh candidate op list
     for (auto &opv : all_ops)
@@ -174,12 +183,12 @@ void Generator::run(SubGraph *in_graph, std::vector<SubGraph *> &out_graphs,
     switch (graph_type) {
 
     case Conv1X1: {
-        addPreprocessForConv1x1(in_graph);
-        dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
-        addToCache(in_graph, out_graphs);
-        resetGraph(in_graph);
-        dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
-        break;
+        // addPreprocessForConv1x1(in_graph);
+        // dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
+        // resetGraph(in_graph);
+        // dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
+        // addToCache(in_graph, out_graphs);
+        // break;
     }
 
     case NormalConv: {
@@ -189,12 +198,14 @@ void Generator::run(SubGraph *in_graph, std::vector<SubGraph *> &out_graphs,
             popBackOp();
         while (num_valid_tensors > in_graph->getInputs().size())
             popBackTensor();
+	resetGraph(in_graph);
         dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
         addToCache(in_graph, out_graphs);
         break;
     }
 
     case TransKernelConv: {
+	resetGraph(in_graph);
         addPreprocessForTransKernel(in_graph);
         dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
         addToCache(in_graph, out_graphs);
@@ -202,33 +213,35 @@ void Generator::run(SubGraph *in_graph, std::vector<SubGraph *> &out_graphs,
     }
 
     case GroupConv: {
+	resetGraph(in_graph);
         addPreprocessForGroupConvGCD(in_graph);
         dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
         resetGraph(in_graph);
         addPreprocessForGroupConvMAX(in_graph);
         dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
         resetGraph(in_graph);
-        addPreprocessForGroupConvOneInput(in_graph);
-        SubGraph *new_graph = new SubGraph(oplist);
-        auto newOutputs = new_graph->getOutputs();
-        for (size_t i = 0, j = 0, iEnd = newOutputs.size(); i < iEnd;
-                ++i) {
-            if (newOutputs[i]->isNotCounted())
-                continue;
-            newOutputs[i]->clone(in_graph->getOutputs()[j]);
-            ++j;
-        }
-        if (prune_reciprocity)
-            markTransType(in_graph, new_graph);
-        if (validDepth(new_graph)) {
-            out_graphs.emplace_back(new_graph);
-            for (auto sg : out_graphs)
-                sg->print();
-        }
+        //addPreprocessForGroupConvOneInput(in_graph);
+        //SubGraph *new_graph = new SubGraph(oplist);
+        //auto newOutputs = new_graph->getOutputs();
+        //for (size_t i = 0, j = 0, iEnd = newOutputs.size(); i < iEnd;
+        //        ++i) {
+        //    if (newOutputs[i]->isNotCounted())
+        //        continue;
+        //    newOutputs[i]->clone(in_graph->getOutputs()[j]);
+        //    ++j;
+        //}
+        //if (prune_reciprocity)
+        //    markTransType(in_graph, new_graph);
+        //if (validDepth(new_graph)) {
+        //    out_graphs.emplace_back(new_graph);
+        //    // for (auto sg : out_graphs)
+        //        // sg->print();
+        //}
         break;
     }
 
     case TransposeGroupConv: {
+	resetGraph(in_graph);
         addPreprocessForTransposeGroupConvRS(in_graph);
         dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
         resetGraph(in_graph);
@@ -238,18 +251,21 @@ void Generator::run(SubGraph *in_graph, std::vector<SubGraph *> &out_graphs,
     }
 
     case NormalOddConv: {
+	resetGraph(in_graph);
         addPreprocessForPadSlice(in_graph);
         dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
         break;
     }
 
     case BatchMatmul: {
+	resetGraph(in_graph);
         addPreprocessForBatchMatmul(in_graph);
         dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
         break;
     }
 
     default: {
+	resetGraph(in_graph);
         dfs(oplist.size(), in_graph, searchingGraph, out_graphs, visited);
         break;
     }
@@ -334,7 +350,7 @@ void Generator::dfs(int depth, SubGraph *in_graph, SubGraph *cur_graph,
         }
     }
 
-    if (depth >= max_depth)
+    if (depth >= max_depth || oplist.size() >= (size_t)max_depth)
         return;
 
     for (size_t index = 0; index < all_ops[depth].size(); index++) {
@@ -344,6 +360,7 @@ void Generator::dfs(int depth, SubGraph *in_graph, SubGraph *cur_graph,
             // assert(op->getInputs().size() == 1);
             SplitOp *split = (SplitOp *)op;
             for (size_t i = 0; i < num_valid_tensors; i++) {
+		if (i > 10) continue;
                 Tensor *x = cur_graph->getTensors()[i];
                 TensorVec outs;
                 auto outsNum = split->getSizes().size();
@@ -383,11 +400,13 @@ void Generator::dfs(int depth, SubGraph *in_graph, SubGraph *cur_graph,
         } else if (op->getType() == Operator::Concat && group_size > 1) {
             TensorVec inputTensors, weightTensors;
             for (size_t i = group_size * 2; i < num_valid_tensors; ++i) {
+		if (i > 10) break;
                 auto t = searchingGraph->getTensors()[i];
                 if (t->getType() == Tensor::Input)
                     inputTensors.emplace_back(t);
             }
             for (size_t i = 0; i < num_valid_tensors; ++i) {
+		if (i > 10) break;
                 auto t = searchingGraph->getTensors()[i];
                 if (t->getType() == Tensor::Weight)
                     weightTensors.emplace_back(t);
@@ -488,12 +507,14 @@ void Generator::dfs(int depth, SubGraph *in_graph, SubGraph *cur_graph,
             // std::cout << std::endl;
             // for (size_t i = 0; i < num_valid_tensors; i++) {
             for (size_t i = group_size * 3; i < num_valid_tensors; i++) {
+		if (i > 10) break;
                 // pruning successive ComputeOp
                 if (op->isComputeOp() &&
                     have_computeOp_ancestor(cur_graph->getTensors()[i]))
                     continue;
                 // for (size_t j = 0; j < num_valid_tensors; j++) {
                 for (size_t j = group_size * 3; j < num_valid_tensors; j++) {
+		    if (j > 10) break;
                     // pruning successive ComputeOp
                     if (op->isComputeOp() &&
                         have_computeOp_ancestor(cur_graph->getTensors()[j]))
@@ -536,6 +557,7 @@ void Generator::dfs(int depth, SubGraph *in_graph, SubGraph *cur_graph,
             // for (size_t i = num_valid_tensors - 1; i != ~(size_t)0; i--) {
             // for (size_t i = 0; i < num_valid_tensors; i++) {
             for (size_t i = group_size * 3; i < num_valid_tensors; i++) {
+		if (i > 10) break;
                 Tensor *x = cur_graph->getTensors()[i];
                 Tensor *output = newTensor();
                 // TODO: make sure there is no bug
@@ -1191,7 +1213,7 @@ void Generator::addCandidateOpsForBatchMatmul(
     std::vector<std::shared_ptr<Operator>> &candidate_ops, SubGraph *sg) {}
 
 void Generator::addPreprocessForGroupConvGCD(SubGraph *sg) {
-    EQOPT
+    NEQOPT
     // max_depth = 1;
     std::vector<int> fvec;
     for (auto conv : sg->getOperators()) {
@@ -1210,6 +1232,8 @@ void Generator::addPreprocessForGroupConvGCD(SubGraph *sg) {
                     auto extend = dynamic_cast<Operator *>(
                         new ExtendOp(1, fvec[i] / fgcd - 1));
                     Tensor *output = newTensor();
+		    if (output == nullptr)
+			continue;
 
                     // TODO: why the function in base class cannot be called?
                     if (!extend->computeShape({input}, {output})) {
@@ -1359,7 +1383,7 @@ void Generator::addPreprocessForGroupConvMAX(SubGraph *sg) {
 }
 
 void Generator::addPreprocessForGroupConvOneInput(SubGraph *sg) {
-    EQOPT
+    //EQOPT
     // max_depth = 1;
     std::vector<int> fvec;
     for (auto conv : sg->getOperators()) {
@@ -1444,7 +1468,7 @@ void Generator::addPreprocessForPadSlice(SubGraph *sg) {
 }
 
 void Generator::addPreprocessForConv1x1(SubGraph *sg) {
-    EQOPT
+    //EQOPT
     // max_depth = 1;
     auto t0 = newTensor(), t1 = newTensor(), t2 = newTensor();
     auto conv = sg->getOperators()[0];
@@ -1493,7 +1517,7 @@ void Generator::addPreprocessForConv1x1(SubGraph *sg) {
 }
 
 void Generator::addPreprocessForTransKernel(SubGraph *sg) {
-    EQOPT
+    //EQOPT
     // max_depth = 1;
     auto input = searchingGraph->getTensors()[0];
     auto weight = searchingGraph->getTensors()[1];
@@ -1607,7 +1631,7 @@ uint64_t Generator::computeHashForSingleComputeOp(const Operator *op) {
 }
 
 void Generator::addPreprocessForTransposeGroupConvRS(SubGraph *sg) {
-    EQOPT
+    // EQOPT
     // max_depth = 1;
     auto w0dim = sg->getOperators()[0]->getInputs()[1]->getDims();
     auto r = w0dim[2];
@@ -1700,7 +1724,7 @@ void Generator::addPreprocessForTransposeGroupConvRS(SubGraph *sg) {
 }
 
 void Generator::addPreprocessForTransposeGroupConvSR(SubGraph *sg) {
-    EQOPT
+    //EQOPT
     // max_depth = 1;
     auto w0dim = sg->getOperators()[0]->getInputs()[1]->getDims();
     auto r = w0dim[2];

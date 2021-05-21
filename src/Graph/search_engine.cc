@@ -9,12 +9,12 @@ SearchEngine::SearchEngine() {
     perfEngine = std::make_shared<PerfEngine>();
     mutationEngine = std::make_shared<Generator>();
     // eliminateEngine = std::make_shared<TransEliminator>();
-    auto msenv = getenv("PET_MUTATION_SIZE");
+    auto msenv = getenv("PET_MUTATION_ROUND");
     if (msenv != nullptr)
-        MUTATION_SIZE = atoi(msenv);
+        MUTATION_DEPTH = atoi(msenv);
     auto mdenv = getenv("PET_MUTATION_DEPTH");
     if (mdenv != nullptr)
-        MUTATION_DEPTH = atoi(mdenv);
+        MUTATION_MDEPTH = atoi(mdenv);
 }
 
 SearchEngine::~SearchEngine() {}
@@ -512,7 +512,7 @@ int SearchEngine::getMutation(
                 << std::endl;
             return 1;
         }
-        mutationEngine->run(corp.get(), mutation);
+        mutationEngine->run(corp.get(), mutation, MUTATION_MDEPTH);
         if (mutation.size() == 0) {
             std::cout << "[WARNING] search_engine::getMutation: mergeable "
                          "subgraph can't be merged. (mutation engine bug. "
@@ -546,12 +546,16 @@ int SearchEngine::getMutation(
             std::cout << "[ERROR] search_engine::getMutation: baseGraph have "
                          "no compute ops."
                       << std::endl;
+	    if (getenv("PET_DISABLE_EQ_OPT") != nullptr)
+	    	continue;
             return 1;
         }
         if (corpOps.size() > 1) {
             std::cout << "[ERROR] search_engine::getMutation: baseGraph have "
                          "multiple compute ops."
                       << std::endl;
+	    if (getenv("PET_DISABLE_EQ_OPT") != nullptr)
+	    	continue;
             return 1;
         }
         computeOp = corpOps[0];
@@ -593,7 +597,7 @@ int SearchEngine::getMutation(
         }
         corp = std::make_shared<SubGraph>(corpOps);
         mutation.clear();
-        mutationEngine->run(corp.get(), mutation);
+        mutationEngine->run(corp.get(), mutation, MUTATION_MDEPTH);
 
         for (auto tmpGraph : mutation) {
             corpOps.clear();
@@ -685,7 +689,7 @@ int SearchEngine::getSingleMutation(
 
     candidates.clear();
     std::vector<SubGraph *> tmp;
-    mutationEngine->run(corp.get(), tmp);
+    mutationEngine->run(corp.get(), tmp, MUTATION_MDEPTH);
     for (auto g : tmp) {
         g->reset(corp->getInputs(), corp->getOutputs());
         std::shared_ptr<SubGraph> merged;

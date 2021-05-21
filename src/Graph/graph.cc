@@ -597,8 +597,9 @@ bool Graph::importOnnx(const char *net) {
         }
         throw;
     }
-    if (mutateInceptionHead())
+    if (mutateInceptionHead()) {
         puts("Detecting inception head");
+    }
 
     updateConnection();
     return true;

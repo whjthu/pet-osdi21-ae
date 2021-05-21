@@ -12,11 +12,15 @@ def gemm(b, m, n, k):
 def expr_origin():
     t = gemm(1, 512, 768, 768)
     print("origin time: %f" % (t*3))
+    return t*3
 
 def expr_opt():
     t = gemm(3, 512, 768, 768)
     print("opt time: %f" % t)
+    return t
+
 
 if __name__ == "__main__":
-    expr_origin()
-    expr_opt()
+    t1 = expr_origin()
+    t2 = expr_opt()
+    print("speedup: %f" % (t1/t2))

@@ -1571,7 +1571,11 @@ double TransposeOp::perf(PerfEngine *pe, int rounds, int warmupRounds) {
         return 0;
     }
     else {
-        return inputs[0]->size() * sizeof(float) * 2 / (400.0 * 1024 * 1024);
+    	auto mdenv = getenv("PET_MUTATION_DEPTH");
+        if (mdenv != nullptr)
+	    return 0;
+	else 
+            return inputs[0]->size() * sizeof(float) * 2 / (400.0 * 1024 * 1024);
         // Too large overhead
         // CodeEngine code_engine;
         // code_engine.genTransposeCompute(*this);

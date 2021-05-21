@@ -7,19 +7,20 @@ from time import time
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-if len(sys.argv) != 7:
-    print("Usage: python %s <pd-file> n c h w" % (sys.argv[0]))
+if len(sys.argv) != 8:
+    print("Usage: python %s <pd-file> n c d h w" % (sys.argv[0]))
     exit(-1)
 
 PB_PATH = sys.argv[1]
 
 n = int(sys.argv[2])
 c = int(sys.argv[3])
-h = int(sys.argv[4])
-w = int(sys.argv[5])
-xla = eval(sys.argv[6])
+d = int(sys.argv[4])
+h = int(sys.argv[5])
+w = int(sys.argv[6])
+xla = eval(sys.argv[7])
 
-print("params", PB_PATH, n, c, h, w, xla)
+print("params", PB_PATH, n, c, d, h, w, xla)
 
 # INPUT_NAME = 'input.1:0'
 # OUTPUT_NAME = '191:0'
@@ -36,11 +37,14 @@ elif h==14:
 elif h==512:
     INPUT_NAME = 'input.1:0'
     OUTPUT_NAME = '444:0'
+elif h==112:
+    INPUT_NAME = '0:0'
+    OUTPUT_NAME = '190:0'
 else:
     assert(False)
 
 # x = np.random.randn(n * c * h * w)
-x = np.random.randn(n, c , h , w)
+x = np.random.randn(n, c , d , h , w)
 # y = tf.constant(list(x), shape=(n, c, h, w), dtype='float32')
 
 # XLA

@@ -12,11 +12,14 @@ def conv(n, c, h, w, f, wc, r, s, ph, pw, sh, sw, dh, dw):
 def expr_origin():
     t = conv(1, 512, 14, 14, 256, 512, 3, 3, 1, 1, 1, 1, 2, 2)
     print("origin time: %f" % t)
+    return t
 
 def expr_opt():
     t = conv(1, 512, 14, 14, 256, 512, 3, 3, 1, 1, 1, 1, 1, 1)
     print("opt time: %f" % t)
+    return t
 
 if __name__ == "__main__":
-    expr_origin()
-    expr_opt()
+    t1 = expr_origin()
+    t2 = expr_opt()
+    print("speedup: %f" % (t1/t2))

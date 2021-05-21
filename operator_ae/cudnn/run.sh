@@ -1,3 +1,5 @@
+#!/bin/bash
+
 make
 echo "conv"
 python3 conv.py
